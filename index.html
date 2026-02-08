@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק הצורות</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .shape-display {
+            height: 300px;
+            background: #fafafa;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            border: 3px solid #e0e0e0;
+        }
+
+        .timer-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #4CAF50, #FFC107, #F44336);
+            border-radius: 15px 15px 0 0;
+            transition: width 0.1s linear;
+        }
+
+        .shape-canvas {
+            width: 200px;
+            height: 200px;
+        }
+
+        .buttons-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .game-button {
+            padding: 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            font-family: inherit;
+        }
+
+        .game-button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-same {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .btn-different {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .btn-partial {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        .feedback {
+            text-align: center;
+            min-height: 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .correct {
+            color: #4CAF50;
+        }
+
+        .incorrect {
+            color: #F44336;
+        }
+
+        .instruction {
+            text-align: center;
+            color: #666;
+            font-size: 0.95em;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+
+        .start-screen {
+            text-align: center;
+        }
+
+        .start-button {
+            padding: 20px 40px;
+            font-size: 1.3em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .reset-button {
+            padding: 12px 30px;
+            font-size: 1em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .reset-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .pulse {
+            animation: pulse 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎨 משחק הצורות 🎨</h1>
+        
+        <div id="startScreen" class="start-screen">
+            <div class="instruction">
+                <p><strong>ברוכים הבאים למשחק הצורות!</strong></p>
+                <p style="margin-top: 10px;">הצורה הראשונה תוצג למספר שניות.</p>
+                <p>לאחר מכן, בכל סבב תופיע צורה חדשה.</p>
+                <p>עליך להחליט האם היא:</p>
+                <p><strong>זהה</strong> לחלוטין (צבע וצורה)</p>
+                <p><strong>שונה</strong> לחלוטין (צבע וצורה שונים)</p>
+                <p><strong>זהה באופן חלקי</strong> (צבע או צורה זהים)</p>
+                <p style="margin-top: 10px;">יש לך 5 שניות להחליט!</p>
+            </div>
+            <button class="start-button" onclick="startGame()">🚀 התחל משחק</button>
+        </div>
+
+        <div id="gameScreen" style="display: none;">
+            <div class="score-board">
+                <div class="score-item">
+                    <div class="score-label">ניקוד</div>
+                    <div class="score-value" id="score">0</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">רצף נכון</div>
+                    <div class="score-value" id="streak">0</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">סבב</div>
+                    <div class="score-value" id="round">1</div>
+                </div>
+            </div>
+
+            <div class="shape-display">
+                <div class="timer-bar" id="timerBar"></div>
+                <svg class="shape-canvas" id="shapeCanvas"></svg>
+            </div>
+
+            <div class="feedback" id="feedback"></div>
+
+            <div class="buttons-container">
+                <button class="game-button btn-same" id="btnSame" onclick="checkAnswer('same')">
+                    ✓ זהה
+                </button>
+                <button class="game-button btn-partial" id="btnPartial" onclick="checkAnswer('partial')">
+                    ≈ זהה באופן חלקי
+                </button>
+                <button class="game-button btn-different" id="btnDifferent" onclick="checkAnswer('different')">
+                    ✗ שונה
+                </button>
+            </div>
+
+            <div class="instruction" id="instructionText">
+                זכור את הצורה הזו...
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="reset-button" onclick="resetGame()">
+                    🔄 התחל מחדש
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SHAPES = [
+            // צורות מורכבות ומעניינות
+            { name: 'star', draw: drawStar },
+            { name: 'hexagon', draw: drawHexagon },
+            { name: 'heart', draw: drawHeart },
+            { name: 'diamond', draw: drawDiamond },
+            { name: 'moon', draw: drawMoon },
+            { name: 'flower', draw: drawFlower },
+            { name: 'arrow', draw: drawArrow }
+        ];
+
+        const COLORS = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+            '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'
+        ];
+
+        let currentShape = null;
+        let previousShape = null;
+        let score = 0;
+        let streak = 0;
+        let round = 1;
+        let timer = null;
+        let timeLeft = 5000; // 5 seconds
+        const TIME_LIMIT = 5000;
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            score = 0;
+            streak = 0;
+            round = 1;
+            currentShape = null;
+            previousShape = null;
+            updateScore();
+            nextRound();
+        }
+
+        function resetGame() {
+            if (timer) clearInterval(timer);
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'block';
+            score = 0;
+            streak = 0;
+            round = 1;
+            currentShape = null;
+            previousShape = null;
+            document.getElementById('feedback').textContent = '';
+            const timerBar = document.getElementById('timerBar');
+            timerBar.style.width = '0%';
+        }
+
+        function nextRound() {
+            previousShape = currentShape;
+            currentShape = generateShape();
+            displayShape(currentShape);
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('round').textContent = round;
+            
+            // First shape - just display it for 3 seconds
+            if (!previousShape) {
+                disableButtons();
+                document.getElementById('instructionText').textContent = 'זכור את הצורה הזו...';
+                
+                // Show countdown timer for first shape
+                timeLeft = 3000;
+                const timerBar = document.getElementById('timerBar');
+                timerBar.style.width = '100%';
+                
+                if (timer) clearInterval(timer);
+                timer = setInterval(() => {
+                    timeLeft -= 100;
+                    const percentage = (timeLeft / 3000) * 100;
+                    timerBar.style.width = percentage + '%';
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        round++;
+                        nextRound();
+                    }
+                }, 100);
+            } else {
+                // Regular round - enable buttons and start game timer
+                enableButtons();
+                document.getElementById('instructionText').textContent = 'השווה את הצורה הנוכחית לצורה הקודמת';
+                startTimer();
+            }
+        }
+
+        function generateShape() {
+            if (!previousShape) {
+                // First shape - completely random
+                return {
+                    shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
+                    color: COLORS[Math.floor(Math.random() * COLORS.length)]
+                };
+            }
+
+            // Decide relationship: same, different, or partial
+            const relationships = ['same', 'different', 'partial'];
+            const relationship = relationships[Math.floor(Math.random() * relationships.length)];
+
+            let newShape, newColor;
+
+            switch (relationship) {
+                case 'same':
+                    newShape = previousShape.shape;
+                    newColor = previousShape.color;
+                    break;
+                
+                case 'different':
+                    do {
+                        newShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+                    } while (newShape.name === previousShape.shape.name);
+                    
+                    do {
+                        newColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+                    } while (newColor === previousShape.color);
+                    break;
+                
+                case 'partial':
+                    if (Math.random() < 0.5) {
+                        // Same shape, different color
+                        newShape = previousShape.shape;
+                        do {
+                            newColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+                        } while (newColor === previousShape.color);
+                    } else {
+                        // Different shape, same color
+                        do {
+                            newShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+                        } while (newShape.name === previousShape.shape.name);
+                        newColor = previousShape.color;
+                    }
+                    break;
+            }
+
+            return {
+                shape: newShape,
+                color: newColor,
+                correctAnswer: relationship
+            };
+        }
+
+        function displayShape(shapeData) {
+            const canvas = document.getElementById('shapeCanvas');
+            canvas.innerHTML = '';
+            shapeData.shape.draw(canvas, shapeData.color);
+        }
+
+        function startTimer() {
+            timeLeft = TIME_LIMIT;
+            const timerBar = document.getElementById('timerBar');
+            timerBar.style.width = '100%';
+            
+            if (timer) clearInterval(timer);
+            
+            timer = setInterval(() => {
+                timeLeft -= 100;
+                const percentage = (timeLeft / TIME_LIMIT) * 100;
+                timerBar.style.width = percentage + '%';
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    handleTimeout();
+                }
+            }, 100);
+        }
+
+        function handleTimeout() {
+            disableButtons();
+            showFeedback('⏰ הזמן נגמר!', false);
+            streak = 0;
+            setTimeout(() => {
+                round++;
+                nextRound();
+            }, 1500);
+        }
+
+        function checkAnswer(answer) {
+            if (!currentShape.correctAnswer) return; // First round
+            
+            clearInterval(timer);
+            disableButtons();
+            
+            const correct = answer === currentShape.correctAnswer;
+            
+            if (correct) {
+                score += 10 + streak * 2;
+                streak++;
+                showFeedback('🎉 נכון!', true);
+            } else {
+                streak = 0;
+                const correctAnswerText = {
+                    'same': 'זהה',
+                    'different': 'שונה',
+                    'partial': 'זהה באופן חלקי'
+                }[currentShape.correctAnswer];
+                showFeedback(`❌ לא נכון! התשובה הנכונה: ${correctAnswerText}`, false);
+            }
+            
+            updateScore();
+            
+            setTimeout(() => {
+                round++;
+                nextRound();
+            }, 1500);
+        }
+
+        function showFeedback(message, isCorrect) {
+            const feedback = document.getElementById('feedback');
+            feedback.textContent = message;
+            feedback.className = 'feedback ' + (isCorrect ? 'correct pulse' : 'incorrect shake');
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('streak').textContent = streak;
+        }
+
+        function enableButtons() {
+            document.getElementById('btnSame').disabled = false;
+            document.getElementById('btnPartial').disabled = false;
+            document.getElementById('btnDifferent').disabled = false;
+        }
+
+        function disableButtons() {
+            document.getElementById('btnSame').disabled = true;
+            document.getElementById('btnPartial').disabled = true;
+            document.getElementById('btnDifferent').disabled = true;
+        }
+
+        // Shape drawing functions
+        function drawStar(svg, color) {
+            const points = [];
+            for (let i = 0; i < 10; i++) {
+                const angle = (i * Math.PI) / 5 - Math.PI / 2;
+                const radius = i % 2 === 0 ? 80 : 35;
+                points.push([
+                    100 + radius * Math.cos(angle),
+                    100 + radius * Math.sin(angle)
+                ]);
+            }
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            path.setAttribute('points', points.map(p => p.join(',')).join(' '));
+            path.setAttribute('fill', color);
+            svg.appendChild(path);
+        }
+
+        function drawHexagon(svg, color) {
+            const points = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3;
+                points.push([
+                    100 + 70 * Math.cos(angle),
+                    100 + 70 * Math.sin(angle)
+                ]);
+            }
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            path.setAttribute('points', points.map(p => p.join(',')).join(' '));
+            path.setAttribute('fill', color);
+            svg.appendChild(path);
+        }
+
+        function drawHeart(svg, color) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M100,150 C100,150 40,100 40,70 C40,50 55,40 70,40 C85,40 100,55 100,55 C100,55 115,40 130,40 C145,40 160,50 160,70 C160,100 100,150 100,150 Z');
+            path.setAttribute('fill', color);
+            svg.appendChild(path);
+        }
+
+        function drawDiamond(svg, color) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            path.setAttribute('points', '100,30 170,100 100,170 30,100');
+            path.setAttribute('fill', color);
+            svg.appendChild(path);
+        }
+
+        function drawCross(svg, color) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M80,30 L120,30 L120,80 L170,80 L170,120 L120,120 L120,170 L80,170 L80,120 L30,120 L30,80 L80,80 Z');
+            path.setAttribute('fill', color);
+            svg.appendChild(path);
+        }
+
+        function drawMoon(svg, color) {
+            const circle1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle1.setAttribute('cx', '100');
+            circle1.setAttribute('cy', '100');
+            circle1.setAttribute('r', '60');
+            circle1.setAttribute('fill', color);
+            svg.appendChild(circle1);
+
+            const circle2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle2.setAttribute('cx', '120');
+            circle2.setAttribute('cy', '90');
+            circle2.setAttribute('r', '50');
+            circle2.setAttribute('fill', 'white');
+            svg.appendChild(circle2);
+        }
+
+        function drawFlower(svg, color) {
+            // Center
+            const center = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            center.setAttribute('cx', '100');
+            center.setAttribute('cy', '100');
+            center.setAttribute('r', '20');
+            center.setAttribute('fill', '#FFC107');
+            
+            // Petals
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3;
+                const petal = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                petal.setAttribute('cx', 100 + 40 * Math.cos(angle));
+                petal.setAttribute('cy', 100 + 40 * Math.sin(angle));
+                petal.setAttribute('r', '25');
+                petal.setAttribute('fill', color);
+                svg.appendChild(petal);
+            }
+            svg.appendChild(center);
+        }
+
+        function drawArrow(svg, color) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M40,90 L40,110 L120,110 L120,140 L170,100 L120,60 L120,90 Z');
+            path.setAttribute('fill', color);
+            svg.appendChild(path);
+        }
+    </script>
+</body>
+</html>
